@@ -133,10 +133,26 @@ def calc_sub(*args):
     first_num, *rest_nums = args
     return first_num - scheme_builtins['+'](*rest_nums)
 
+def calc_prod(*args):
+    if len(args) == 1:
+        return args[0]
+    
+    first_num, *rest_nums = args
+    return first_num * scheme_builtins['*'](*rest_nums)
+
+def calc_div(*args):
+    if len(args) == 1:
+        return args[0]
+    
+    first_num, *rest_nums = args
+    return first_num / scheme_builtins['*'](*rest_nums)
+
 
 scheme_builtins = {
     "+": lambda *args: sum(args),
     "-": calc_sub,
+    '*': calc_prod,
+    '/': calc_div
 }
 
 
@@ -155,13 +171,30 @@ def evaluate(tree):
         tree (type varies): a fully parsed expression, as the output from the
                             parse function
     """
-    raise NotImplementedError
+    if not isinstance(tree, list):
+        if isinstance(tree, str):
+            if tree in scheme_builtins:
+                return scheme_builtins[tree]
+            else:
+                raise SchemeNameError
+        return tree
+    
+    # tree is a list.
+    evaluated_subtree = list(map(evaluate, tree))
+    func, args = evaluated_subtree[0], evaluated_subtree[1:]
+
+    if not callable(func):
+        raise SchemeEvaluationError
+    
+    return func(*args)
 
 
 if __name__ == "__main__":
     # code in this block will only be executed if lab.py is the main file being
     # run (not when this module is imported)
-    import os
-    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-    import schemerepl
-    schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=False).cmdloop()
+    # import os
+    # sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+    # import schemerepl
+    # schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=False).cmdloop()
+
+    print(evaluate(['a', 1, 2]))
