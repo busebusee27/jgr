@@ -134,6 +134,8 @@ def calc_sub(*args):
     return first_num - scheme_builtins['+'](*rest_nums)
 
 def calc_prod(*args):
+    if len(args) == 0:
+        return 1
     if len(args) == 1:
         return args[0]
     
@@ -178,10 +180,29 @@ class Frame:
             return self.bindings[item]
         if self.parent is not None:
             return self.parent[item]
-        raise SchemeError
+        raise SchemeError('here')
     
     def __setitem__(self, item, val):
         self.bindings[item] = val
+
+
+class Lambda:
+    def __init__(self, body, params, frame):
+        self.body = body
+        self.params = params
+        self.frame = frame
+
+    def __call__(self, *args):
+        if len(self.params) != len(args):
+            raise SchemeEvaluationError(f'Expected {len(self.params)} arguments, but got {len(args)}')
+
+        args_to_pass = list(map(lambda x: evaluate(x, self.frame), args))
+        new_frame = Frame(parent=self.frame)
+
+        for param, arg in zip(self.params, args_to_pass):
+            new_frame[param] = arg
+
+        return evaluate(self.body, new_frame)
 
 
 def make_initial_frame():
@@ -208,10 +229,31 @@ def evaluate(tree, frame=make_initial_frame()):
     
     # tree is a list.
     if tree[0] == 'define':
-        var_name = tree[1]
-        var_val = evaluate(tree[2], frame)
-        frame[var_name] = var_val
-        return var_val
+        if isinstance(tree[1], str):
+            var_name = tree[1]
+            var_val = evaluate(tree[2], frame)
+            frame[var_name] = var_val
+            return frame[var_name]
+        else:
+            func_definition = tree[1]
+            func_body = tree[2]
+            func_name = func_definition[0]
+            if len(func_definition) == 1: # no params
+                func_params = []
+            else:
+                func_params = func_definition[1:]
+            
+            frame[func_name] = Lambda(func_body, func_params, frame)
+            return frame[func_name]
+
+    elif tree[0] == 'lambda':
+        try:
+            params = tree[1]
+            body = tree[2]
+            return Lambda(body, params, frame)
+        except:
+            raise SchemeEvaluationError('Incorrectly defined function')
+
     else:
         evaluated_subtree = list(map(lambda x: evaluate(x, frame), tree))
         func, args = evaluated_subtree[0], evaluated_subtree[1:]
@@ -225,11 +267,11 @@ def evaluate(tree, frame=make_initial_frame()):
 if __name__ == "__main__":
     # code in this block will only be executed if lab.py is the main file being
     # run (not when this module is imported)
-    # import os
-    # sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-    # import schemerepl
-    # schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=False).cmdloop()
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+    import schemerepl
+    schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=True).cmdloop()
 
-    inp = '(define x 7)'
-    parsed = parse(tokenize(inp))
-    print(evaluate(parsed))
+    # inp = '(define square (lambda (x) (* x x)))'
+    # parsed = parse(tokenize(inp))
+    # print(evaluate(parsed))
