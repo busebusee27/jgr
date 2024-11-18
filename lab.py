@@ -84,8 +84,15 @@ def tokenize(source):
         source (str): a string containing the source code of a Scheme
                       expression
     """
-    raise NotImplementedError
+    def remove_comments(text):
+        # Split the text into lines and remove everything after ';' in each line
+        lines = text.splitlines()
+        cleaned_lines = [line.split(';', 1)[0] for line in lines]  # Remove anything after ';'
+        return '\n'.join(cleaned_lines)  # Rejoin the cleaned lines
 
+    source = remove_comments(source)
+    source = source.replace('(', ' ( ').replace(')', ' ) ')
+    return source.split()
 
 def parse(tokens):
     """
@@ -97,7 +104,22 @@ def parse(tokens):
     Arguments:
         tokens (list): a list of strings representing tokens
     """
-    raise NotImplementedError
+    def parse_exp(idx):
+        if tokens[idx] != '(':
+            return number_or_symbol(tokens[idx]), idx+1
+
+        # We should have hit a ( now
+        next_idx = idx+1
+        sub_expr = []
+        while tokens[next_idx] != ')':
+            thing, next_idx = parse_exp(next_idx)
+            sub_expr.append(thing)
+
+        return sub_expr, next_idx+1
+    
+    parsed, _ = parse_exp(0)
+    return parsed
+
 
 
 ######################
