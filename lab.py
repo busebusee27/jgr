@@ -161,8 +161,35 @@ scheme_builtins = {
 # Evaluation #
 ##############
 
+class Frame:
+    def __init__(self, bindings={}, parent = None):
+        self.bindings = bindings.copy()
+        self.parent = parent
 
-def evaluate(tree):
+    def __contains__(self, item):
+        if item in self.bindings:
+            return True
+        if self.parent is not None and item in self.parent:
+            return True
+        return False
+
+    def __getitem__(self, item):
+        if item in self.bindings:
+            return self.bindings[item]
+        if self.parent is not None:
+            return self.parent[item]
+        raise SchemeError
+    
+    def __setitem__(self, item, val):
+        self.bindings[item] = val
+
+
+def make_initial_frame():
+    global_frame = Frame(bindings=scheme_builtins.copy())
+    empty_frame = Frame(parent=global_frame)
+    return empty_frame
+
+def evaluate(tree, frame=make_initial_frame()):
     """
     Evaluate the given syntax tree according to the rules of the Scheme
     language.
@@ -173,20 +200,26 @@ def evaluate(tree):
     """
     if not isinstance(tree, list):
         if isinstance(tree, str):
-            if tree in scheme_builtins:
-                return scheme_builtins[tree]
+            if tree in frame:
+                return frame[tree]
             else:
-                raise SchemeNameError
+                raise SchemeNameError(f'Name `{tree}` not found')
         return tree
     
     # tree is a list.
-    evaluated_subtree = list(map(evaluate, tree))
-    func, args = evaluated_subtree[0], evaluated_subtree[1:]
+    if tree[0] == 'define':
+        var_name = tree[1]
+        var_val = evaluate(tree[2], frame)
+        frame[var_name] = var_val
+        return var_val
+    else:
+        evaluated_subtree = list(map(lambda x: evaluate(x, frame), tree))
+        func, args = evaluated_subtree[0], evaluated_subtree[1:]
 
-    if not callable(func):
-        raise SchemeEvaluationError
-    
-    return func(*args)
+        if not callable(func):
+            raise SchemeEvaluationError
+        
+        return func(*args)
 
 
 if __name__ == "__main__":
@@ -197,4 +230,6 @@ if __name__ == "__main__":
     # import schemerepl
     # schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=False).cmdloop()
 
-    print(evaluate(['a', 1, 2]))
+    inp = '(define x 7)'
+    parsed = parse(tokenize(inp))
+    print(evaluate(parsed))
