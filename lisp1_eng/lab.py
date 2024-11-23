@@ -13,8 +13,6 @@ import sys
 
 sys.setrecursionlimit(20_000)
 
-import utils
-
 # NO ADDITIONAL IMPORTS!
 
 #############################
@@ -69,10 +67,10 @@ def number_or_symbol(value):
     'x'
     """
     try:
-        return int(utils.translate_number(value))
+        return int(value)
     except ValueError:
         try:
-            return float(utils.translate_number(value))
+            return float(value)
         except ValueError:
             return value
 
@@ -226,11 +224,11 @@ def evaluate(tree, frame=make_initial_frame()):
             if tree in frame:
                 return frame[tree]
             else:
-                raise SchemeNameError(f'نام `{tree}` نہیں ملا')
+                raise SchemeNameError(f'Name `{tree}` not found')
         return tree
     
     # tree is a list.
-    if tree[0] == 'کہو':
+    if tree[0] == 'define':
         if isinstance(tree[1], str):
             var_name = tree[1]
             var_val = evaluate(tree[2], frame)
@@ -248,7 +246,7 @@ def evaluate(tree, frame=make_initial_frame()):
             frame[func_name] = Lambda(func_body, func_params, frame)
             return frame[func_name]
 
-    elif tree[0] == 'گمنام':
+    elif tree[0] == 'lambda':
         try:
             params = tree[1]
             body = tree[2]
@@ -273,3 +271,7 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
     import schemerepl
     schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=True).cmdloop()
+
+    # inp = '(define square (lambda (x) (* x x)))'
+    # parsed = parse(tokenize(inp))
+    # print(evaluate(parsed))
