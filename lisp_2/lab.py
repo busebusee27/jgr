@@ -270,8 +270,4 @@ if __name__ == "__main__":
     import os
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
     import schemerepl
-    schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=True).cmdloop()
-
-    # inp = '(define square (lambda (x) (* x x)))'
-    # parsed = parse(tokenize(inp))
-    # print(evaluate(parsed))
+    schemerepl.SchemeREPL(sys.modules[__name__], use_frames=False, verbose=False).cmdloop()
